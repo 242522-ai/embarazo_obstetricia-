@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Aventura de cuidado prenatal</title>
+<style>
+:root{--pink:#ff5fa2;--gold:#ffd166;--mint:#70e1c1;--panel:#17171d;--white:#fff}
+*{box-sizing:border-box}
+body{margin:0;background:#050505;color:var(--white);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+main{max-width:900px;margin:auto;padding:16px}
+h1{text-align:center;font-size:clamp(1.5rem,5vw,2.5rem);margin:8px 0;color:#ff9ac5}
+.subtitle{text-align:center;color:#d6d6df;margin:0 0 14px}
+.panel{background:#121218;border:1px solid #333340;border-radius:18px;padding:16px;margin:12px 0}
+.stats{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:12px 0}
+.pill{background:#20202a;border:1px solid #3b3b48;border-radius:999px;padding:8px 13px;font-weight:700}
+#arena{height:300px;position:relative;overflow:hidden;border-radius:16px;border:2px solid #393943;background:linear-gradient(#101018,#1c1c25);touch-action:manipulation}
+#arena:before{content:"";position:absolute;left:0;right:0;bottom:0;height:72px;background:#292933;border-top:2px solid #454552}
+#path{position:absolute;bottom:31px;left:0;right:0;border-top:3px dashed #aaaab5;opacity:.6}
+.item,.rock,#player,#goal{position:absolute;transform:translate(-50%,-50%);z-index:2;user-select:none}
+.item{font-size:30px;bottom:78px;top:auto;cursor:default}
+#player{font-size:43px;left:8%;bottom:58px;transform:translate(-50%,0);transition:left .13s,bottom .13s;line-height:1.2}
+#goal{right:2%;left:auto;bottom:60px;transform:none;font-size:39px}
+.rock{font-size:29px;bottom:78px}
+.hidden{display:none!important}
+.controls{display:flex;justify-content:center;gap:12px;margin-top:12px}
+button{border:0;border-radius:13px;background:#ff5fa2;color:#1a0711;font-weight:800;font-size:1.05rem;padding:13px 18px;cursor:pointer;box-shadow:0 3px 0 #a92d65}
+button:focus-visible{outline:3px solid white;outline-offset:3px}
+button.secondary{background:#333340;color:white;box-shadow:0 3px 0 #1d1d25}
+button.gold{background:#ffd166;box-shadow:0 3px 0 #a77b16}
+#status{min-height:28px;text-align:center;font-weight:700;color:#ffd166;margin:10px 0 0}
+#quiz{display:none}
+#qnum{color:#ff9ac5;font-weight:900;letter-spacing:.06em;text-align:center}
+#question{font-size:clamp(1.45rem,4.8vw,2.2rem);line-height:1.25;text-align:center;font-weight:900;margin:14px 0 20px}
+#answers{display:grid;gap:12px}
+.answer{width:100%;background:#24242f;color:white;box-shadow:none;border:2px solid #484858;text-align:left;padding:16px;font-size:clamp(1.05rem,3vw,1.3rem);line-height:1.3}
+.answer:hover{border-color:#ff9ac5}
+.answer.correct{background:#123d30;border-color:#70e1c1}
+.answer.wrong{background:#481c2b;border-color:#ff718f}
+#feedback{font-size:1.1rem;font-weight:700;text-align:center;min-height:52px;margin:15px 0}
+#next{display:none;width:100%;font-size:1.15rem}
+.note{font-size:.9rem;color:#bdbdc9;line-height:1.5}
+@media(max-width:500px){main{padding:10px}.panel{padding:12px}#arena{height:270px}.controls button{flex:1;padding:13px 8px}}
+</style>
+</head>
+<body>
+<main>
+<h1>💗 Aventura de cuidado prenatal</h1>
+<p class="subtitle">Recoge corazones y monedas, llega al centro de salud y responde el reto.</p>
+<section id="adventure" class="panel">
+<div class="stats">
+<span class="pill">💗 <span id="heartCount">0</span>/5</span>
+<span class="pill">🪙 <span id="coinCount">0</span>/3</span>
+<span class="pill">⭐ Puntos: <span id="score">0</span></span>
+</div>
+<div id="arena" aria-label="Zona de juego">
+<div id="path"></div>
+<span class="item heart" data-x="18" style="left:18%">💗</span>
+<span class="item coin" data-x="27" style="left:27%">🪙</span>
+<span class="item heart" data-x="35" style="left:35%">💗</span>
+<span class="rock" data-x="43" style="left:43%">🪨</span>
+<span class="item coin" data-x="49" style="left:49%">🪙</span>
+<span class="item heart" data-x="56" style="left:56%">💗</span>
+<span class="item coin" data-x="63" style="left:63%">🪙</span>
+<span class="rock" data-x="70" style="left:70%">🪨</span>
+<span class="item heart" data-x="76" style="left:76%">💗</span>
+<span class="item heart" data-x="84" style="left:84%">💗</span>
+<div id="player" aria-label="Personaje embarazada">🤰</div>
+<div id="goal" aria-label="Centro de salud">🏥</div>
+</div>
+<div class="controls">
+<button class="secondary" id="left" aria-label="Mover a la izquierda">⬅️ Izquierda</button>
+<button class="gold" id="jump" aria-label="Saltar">⬆️ Saltar</button>
+<button id="right" aria-label="Mover a la derecha">Derecha ➡️</button>
+</div>
+<div id="status" role="status">Muévete con las flechas o los botones. ¡Pasa cerca de los objetos para recogerlos!</div>
+<p class="note">En computadora también puedes usar las flechas del teclado. Salta para evitar las rocas. Este juego es educativo y no sustituye la atención médica.</p>
+</section>
+<section id="quiz" class="panel">
+<div id="qnum">PREGUNTA 1 DE 5</div>
+<div class="stats"><span class="pill">⭐ Puntos: <span id="quizScore">0</span></span></div>
+<div id="question"></div>
+<div id="answers"></div>
+<div id="feedback" role="status" aria-live="polite"></div>
+<button id="next">Siguiente pregunta ➜</button>
+</section>
+<section id="result" class="panel" style="display:none;text-align:center">
+<h2>🎉 ¡Aventura completada!</h2>
+<div id="finalText" style="font-size:1.25rem;line-height:1.6"></div>
+<button id="restart">Jugar de nuevo</button>
+</section>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const player=$('player'), arena=$('arena');
+let x=8,jumping=false,hearts=0,coins=0,score=0,quizIndex=0,quizPoints=0,answered=false;
+const heartItems=[...document.querySelectorAll('.heart')],coinItems=[...document.querySelectorAll('.coin')],rocks=[...document.querySelectorAll('.rock')];
+const questions=[
+ {q:'¿Qué debes hacer ante un sangrado vaginal abundante durante el embarazo?',a:['Esperar a ver si se pasa','Buscar atención médica de inmediato','Hacer ejercicio'],correct:1,why:'El sangrado abundante necesita valoración médica urgente.'},
+ {q:'¿Dolor de cabeza intenso con visión borrosa puede ser…?',a:['Una señal de alarma','Siempre algo normal','Un antojo'],correct:0,why:'Puede indicar una complicación importante. Busca atención médica urgente.'},
+ {q:'Si notas que el bebé se mueve mucho menos de lo habitual, debes…',a:['Ignorarlo','Consultar oportunamente con un profesional de salud','Esperar una semana'],correct:1,why:'Una disminución importante de movimientos debe consultarse cuanto antes.'},
+ {q:'La pérdida de líquido por la vagina durante el embarazo puede requerir…',a:['Valoración médica','Hacer ejercicio para comprobarlo','Ignorarla'],correct:0,why:'La pérdida de líquido debe ser evaluada por un profesional de salud.'},
+ {q:'¿Las convulsiones o la dificultad importante para respirar son…?',a:['Emergencias que requieren ayuda inmediata','Algo normal del embarazo','Motivo para dormir y esperar'],correct:0,why:'Son emergencias: busca atención médica inmediata.'}
+];
+function render(){player.style.left=x+'%';$('heartCount').textContent=hearts;$('coinCount').textContent=coins;$('score').textContent=score}
+function centers(el){const r=el.getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2}}
+function near(a,b,threshold=52){const A=centers(a),B=centers(b);return Math.hypot(A.x-B.x,A.y-B.y)<threshold}
+function collect(){for(const el of heartItems){if(!el.classList.contains('hidden')&&near(player,el,58)){el.classList.add('hidden');hearts++;score+=50;$('status').textContent='💗 ¡Corazón recogido! +50 puntos.'}}
+for(const el of coinItems){if(!el.classList.contains('hidden')&&near(player,el,58)){el.classList.add('hidden');coins++;score+=25;$('status').textContent='🪙 ¡Moneda recogida! +25 puntos.'}}}
+function move(d){if($('quiz').style.display==='block'||$('result').style.display==='block')return;x=Math.max(4,Math.min(91,x+d));render();collect();let hit=false;
+for(const r of rocks){if(!jumping&&near(player,r,40)){hit=true;x=Math.max(4,x-3);score=Math.max(0,score-10);$('status').textContent='🪨 ¡Cuidado con la roca! Salta con ⬆️. -10 puntos.';render();break}}
+if(x>=90){if(hearts===5){startQuiz()}else{$('status').textContent='🏥 Recoge los '+(5-hearts)+' corazones que faltan para desbloquear las preguntas.';x=86;render()}}}
+function jump(){if(jumping)return;jumping=true;player.style.bottom='125px';$('status').textContent='⬆️ ¡Saltaste!';setTimeout(()=>{jumping=false;player.style.bottom='58px';collect()},650)}
+$('left').onclick=()=>move(-3);$('right').onclick=()=>move(3);$('jump').onclick=jump;
+document.addEventListener('keydown',e=>{if(e.key==='ArrowLeft'){e.preventDefault();move(-3)}if(e.key==='ArrowRight'){e.preventDefault();move(3)}if(e.key==='ArrowUp'||e.key===' '){e.preventDefault();jump()}});
+function startQuiz(){$('adventure').style.display='none';$('quiz').style.display='block';showQuestion();window.scrollTo({top:0,behavior:'smooth'})}
+function showQuestion(){answered=false;$('next').style.display='none';$('feedback').textContent='';$('qnum').textContent=`PREGUNTA ${quizIndex+1} DE ${questions.length}`;$('quizScore').textContent=quizPoints;const q=questions[quizIndex];$('question').textContent=q.q;$('answers').innerHTML='';q.a.forEach((answer,i)=>{const b=document.createElement('button');b.className='answer';b.textContent=String.fromCharCode(65+i)+'. '+answer;b.onclick=()=>choose(i,b);$('answers').appendChild(b)})}
+function choose(i,btn){if(answered)return;answered=true;const q=questions[quizIndex];[...$('answers').children].forEach((b,j)=>{b.disabled=true;if(j===q.correct)b.classList.add('correct')});if(i===q.correct){quizPoints+=100;score+=100;$('feedback').textContent='✅ ¡Correcto! '+q.why}else{btn.classList.add('wrong');$('feedback').textContent='💡 La respuesta correcta está marcada en verde. '+q.why}$('quizScore').textContent=quizPoints;$('next').textContent=quizIndex===questions.length-1?'Ver resultado 🏆':'Siguiente pregunta ➜';$('next').style.display='block'}
+$('next').onclick=()=>{quizIndex++;if(quizIndex<questions.length)showQuestion();else finish()};
+function finish(){$('quiz').style.display='none';$('result').style.display='block';$('finalText').innerHTML=`Respondiste el reto de señales de alarma.<br><strong>${quizPoints} puntos en el cuestionario</strong><br>Corazones: ${hearts}/5 · Monedas: ${coins}/3<br><p class="note">Si durante un embarazo aparece un signo de alarma, consulta con un profesional de salud; ante una emergencia, busca ayuda inmediata.</p>`}
+$('restart').onclick=()=>location.reload();
+render();
+</script>
+</body>
+</html>
